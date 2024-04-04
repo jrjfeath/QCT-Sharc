@@ -1,0 +1,5 @@
+character(len=500), parameter :: build_date="Thu  4 Apr 14:56:49 BST 2024"
+character(len=500), parameter :: build_host="comp0710"
+character(len=500), parameter :: build_dir="/home/hartree2/mb/chem1612/programs/sharc-3.0.2/source"
+character(len=500), parameter :: build_compiler="/u/mb/chem1612/anaconda3/envs/pysharc_3.0/bin/gfortran"
+character(len=500), parameter :: use_pysharc="false"
