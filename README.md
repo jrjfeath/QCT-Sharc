@@ -71,10 +71,9 @@ subroutine write_dat(u, traj, ctrl)
   type(trajectory_type) :: traj
   type(ctrl_type) :: ctrl
   integer :: u, i, j
-  character(8000) :: string
-  
-  integer :: nstates, natom, stride
-  
+  integer :: nstates, natom, stride, io_status
+  character(len=100) :: data_from_python
+
   ! check if writing
   stride=ctrl%output_steps_stride(1)
   if (traj%step>=ctrl%output_steps_limits(2)) then
@@ -84,20 +83,165 @@ subroutine write_dat(u, traj, ctrl)
     stride=ctrl%output_steps_stride(3)
   endif
   if (modulo(traj%step,stride)==0) then
+
     nstates=ctrl%nstates
     natom=ctrl%natom
-  
-    if (ctrl%integrator==2) then 
-      write(u,'(A)') '! 0 Step'
-      write(u,'(I12)') traj%step
-    else if (ctrl%integrator==1 .or. ctrl%integrator==0) then 
-      write(u,'(A)') '! 0 Step'
-      write(u,'(I12,F12.6,F12.6)') traj%step, traj%microtime*au2fs, ctrl%dtstep*au2fs
+
+    ! Send geometry to Python
+    write(6,*) 'GEOM'
+    do i=1,natom
+      write(6,*) (traj%geom_ad(i,j),j=1,3)
+    enddo
+    ! Wait for Python to say it got the data
+    read(*,*,iostat=io_status) data_from_python
+    if (io_status /= 0) then
+      return
     endif
-  
-    call vec3write(natom, traj%geom_ad, u, '! 11 Geometry in a.u.','E21.13e3')
-    call vec3write(natom, traj%veloc_ad, u, '! 12 Velocities in a.u.','E21.13e3')
-  
+    ! Send velocity to Python
+    write(6,*) 'VELOC'
+    do i=1,natom
+      write(6,*) (traj%veloc_ad(i,j),j=1,3)
+    enddo
+    ! Wait for Python to say it got the data
+    read(*,*,iostat=io_status) data_from_python
+    if (io_status /= 0) then
+      return
+    endif
+
   endif  ! <-- end of stride check
+
 endsubroutine
+```
+
+### Changes to: qm_out.f90
+- The data is now passed from python via stdout rather than files. 
+- All get_thing routines need to have the goto_flag call updated to include the line_index
+- - call goto_flag(2,'get_dipoles', line_index) <- line_index stores where in the buffer that property is found
+- matread has been replaced with pyread, d3vecread has been replaced by pyd3vecread
+```
+subroutine goto_flag(flag1, routine, line_index)
+  implicit none
+  character(len=*) :: routine
+  integer :: flag1, flag, i, io
+  integer, intent(out) :: line_index
+  character(len=200) :: string
+
+  ! Loop over data_buffer
+  do i = 1, n_lines
+    string = trim(data_buffer(i))
+
+    ! Check if the line starts with '!'
+    if (string(1:1) == '!') then
+      ! Try to read the flag number from the string
+      read(string(2:20), *, iostat=io) flag
+      if (io == 0 .and. flag == flag1) then
+        ! Found the matching flag, set line_index
+        line_index = i + 1  ! Move to the next line after the flag
+        return
+      end if
+    end if
+  end do
+
+  ! If we get here, the flag wasn't found
+  write(0,*) 'Quantity not found in data buffer'
+  write(0,*) 'Routine =', trim(routine)
+  stop 1
+
+end subroutine
+
+subroutine goto_flag_nostop(flag1, stat)
+  implicit none
+
+  integer :: flag1, flag, stat, i, io
+  character(len=200) :: string
+
+  ! Loop through the data_buffer
+  do i = 1, n_lines
+    string = trim(data_buffer(i))
+
+    ! Check if the line starts with '!'
+    if (string(1:1) == '!') then
+      ! Try to read the flag number from the string
+      read(string(2:20), *, iostat=io) flag
+      if (io == 0 .and. flag == flag1) then
+        ! Flag found, set stat to 0 and return
+        stat = 0
+        return
+      end if
+    end if
+  end do
+
+  ! Flag was not found, set stat to -1
+  stat = -1
+  return
+
+end subroutine
+
+subroutine pyzread(n, A, line_index, title)
+  implicit none
+  integer, intent(in) :: n
+  integer, intent(inout) :: line_index
+  complex*16, intent(out) :: A(n, n)
+  character(len=8000), intent(out) :: title
+  integer :: i, j, io
+  real*8 :: line(2*n)
+  character(len=200) :: string
+
+  ! Read the title line from data_buffer
+  title = trim(data_buffer(line_index))
+  line_index = line_index + 1
+
+  ! Read the matrix data from data_buffer
+  do i = 1, n
+    string = trim(data_buffer(line_index))
+    line_index = line_index + 1
+    read(string, *, iostat=io) (line(j), j = 1, 2*n)
+    if (io /= 0) then
+      write(*,*) 'Could not read matrix'
+      write(*,*) 'routine=zread(), n=', n
+      write(*,*) 'title=', trim(title)
+      stop 1
+    end if
+    do j = 1, n
+      A(i, j) = dcmplx(line(2*j-1), line(2*j))
+    end do
+  end do
+
+end subroutine
+
+subroutine pyd3vecread(n, c, line_index, title)
+  implicit none
+  ! parameters
+  integer, intent(in) :: n
+  real*8, intent(out) :: c(n, 3)
+  integer, intent(inout) :: line_index  ! Current position in data_buffer
+  character(len=8000), intent(out) :: title
+  ! internal variables
+  integer :: i, j, io
+  character(len=200) :: string
+
+  ! Read the title line from data_buffer
+  title = trim(data_buffer(line_index))
+  line_index = line_index + 1
+
+  ! Read the 3-vectors from data_buffer
+  do i = 1, n
+    if (line_index > n_lines) then
+      write(*,*) 'Error: Reached end of data_buffer while reading 3-vectors'
+      stop 1
+    end if
+    string = trim(data_buffer(line_index))
+    line_index = line_index + 1
+
+    ! Read the 3-vector components from the line
+    read(string, *, iostat=io) (c(i, j), j = 1, 3)
+    if (io /= 0) then
+      write(*,*) 'Could not read 3-vector'
+      write(*,*) 'routine=d3vecread(), n=', n
+      write(*,*) 'title=', trim(title)
+      stop 1
+    end if
+  end do
+
+end subroutine
 ```

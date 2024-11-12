@@ -479,9 +479,9 @@ subroutine write_dat(u, traj, ctrl)
   implicit none
   type(trajectory_type) :: traj
   type(ctrl_type) :: ctrl
-  integer :: u
-
-  integer :: nstates, natom, stride
+  integer :: u, i, j
+  integer :: nstates, natom, stride, io_status
+  character(len=100) :: data_from_python
 
   ! check if writing
   stride=ctrl%output_steps_stride(1)
@@ -496,16 +496,26 @@ subroutine write_dat(u, traj, ctrl)
     nstates=ctrl%nstates
     natom=ctrl%natom
 
-    if (ctrl%integrator==2) then 
-      write(u,'(A)') '! 0 Step'
-      write(u,'(I12)') traj%step
-    else if (ctrl%integrator==1 .or. ctrl%integrator==0) then 
-      write(u,'(A)') '! 0 Step'
-      write(u,'(I12,F12.6,F12.6)') traj%step, traj%microtime*au2fs, ctrl%dtstep*au2fs
+    ! Send geometry to Python
+    write(6,*) 'GEOM'
+    do i=1,natom
+      write(6,*) (traj%geom_ad(i,j),j=1,3)
+    enddo
+    ! Wait for Python to say it got the data
+    read(*,*,iostat=io_status) data_from_python
+    if (io_status /= 0) then
+      return
     endif
-
-    call vec3write(natom, traj%geom_ad, u, '! 11 Geometry in a.u.','E21.13e3')
-    call vec3write(natom, traj%veloc_ad, u, '! 12 Velocities in a.u.','E21.13e3')
+    ! Send velocity to Python
+    write(6,*) 'VELOC'
+    do i=1,natom
+      write(6,*) (traj%veloc_ad(i,j),j=1,3)
+    enddo
+    ! Wait for Python to say it got the data
+    read(*,*,iostat=io_status) data_from_python
+    if (io_status /= 0) then
+      return
+    endif
 
   endif  ! <-- end of stride check
 
