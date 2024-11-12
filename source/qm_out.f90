@@ -39,7 +39,8 @@ implicit none
 private
 
 integer, save :: qmout_unit=-1
-
+character(len=200), allocatable :: data_buffer(:)
+integer :: n_lines = 0
 
 ! =================================================================== !
 
@@ -88,19 +89,33 @@ subroutine open_qmout(nunit, filename)
   character(len=*), intent(in) :: filename
 
   integer :: io
+  character(len=200) :: string
 
-  qmout_unit=nunit
+  qmout_unit = nunit
 
-  open(nunit,file=filename,status='old',action='read',iostat=io)
-  if (io/=0) then
-    ! unit 0 is standard error
-    write(0,*) 'Failed to open QMout file "',trim(filename),'" !'
-    stop 1
-  endif
+  ! Initialize line count
+  n_lines = 0
+
+  ! Read all data from stdin into the buffer
+  do
+    read(5, '(A)', iostat=io) string
+    if (io == -1 .or. trim(string) == 'EOF') exit  ! Custom end marker
+
+    n_lines = n_lines + 1
+
+    ! Dynamically extend the data buffer
+    if (.not. allocated(data_buffer)) then
+      allocate(data_buffer(1))
+    else
+      ! Resize with automatic reallocation (Fortran 2008 feature)
+      data_buffer = [data_buffer, string]
+    end if
+
+    data_buffer(n_lines) = string
+  end do
 
   return
-
-endsubroutine
+end subroutine
 
 ! =================================================================== !
 
@@ -111,13 +126,6 @@ subroutine close_qmout
   implicit none
 
   integer :: io
-
-  close(qmout_unit,iostat=io)
-  if (io/=0) then
-    ! unit 0 is standard error
-    write(0,*) 'Failed to close QMout file, unit=',qmout_unit,'!'
-    stop 1
-  endif
 
   qmout_unit=-1
 
@@ -145,66 +153,65 @@ endsubroutine
 !> rewinds and searches the QM.out file for the given flag
 !> each flag marks a quantity (e.g., Hamiltonian)
 !> \param flag1 requested flag
-subroutine goto_flag(flag1,routine)
+subroutine goto_flag(flag1, routine, line_index)
   implicit none
   character(len=*) :: routine
-!   character :: marker
-  integer :: flag1, flag
-  integer :: io
-  character(len=20) :: string
+  integer :: flag1, flag, i, io
+  integer, intent(out) :: line_index
+  character(len=200) :: string
 
-  rewind(qmout_unit)
-  do
-!     read(qmout_unit,*,iostat=io) marker,flag
-    read(qmout_unit,'(a)',iostat=io) string     !marker,flag
-    if (io==-1) then
-      write(0,*) 'Quantity not found in QMout file, unit=',qmout_unit
-      write(0,*) 'Routine=',trim(routine)
-      stop 1
-    endif
-!     if ( (marker=='!').and.(flag==flag1) ) exit
-    if ( string(1:1)=='!' ) then
-      read(string(2:20),*,iostat=io) flag
-      if ( (io==0).and.(flag==flag1) ) then
-!         stat=0
-        exit
-      endif
-    endif
-  enddo
+  ! Loop over data_buffer
+  do i = 1, n_lines
+    string = trim(data_buffer(i))
 
-endsubroutine
+    ! Check if the line starts with '!'
+    if (string(1:1) == '!') then
+      ! Try to read the flag number from the string
+      read(string(2:20), *, iostat=io) flag
+      if (io == 0 .and. flag == flag1) then
+        ! Found the matching flag, set line_index
+        line_index = i + 1  ! Move to the next line after the flag
+        return
+      end if
+    end if
+  end do
+
+  ! If we get here, the flag wasn't found
+  write(0,*) 'Quantity not found in data buffer'
+  write(0,*) 'Routine =', trim(routine)
+  stop 1
+
+end subroutine
 
 ! =================================================================== !
 
-!> rewinds and searches the QM.out file for the given flag
-!> each flag marks a quantity (e.g., Hamiltonian)
-!> In opposite to goto_flag, this routine does not give an error
-!> if the requested flag is not found.
-!> \param flag1 requested flag
-subroutine goto_flag_nostop(flag1,stat)
+subroutine goto_flag_nostop(flag1, stat)
   implicit none
-!   character :: marker
-  integer :: flag1, flag, stat
-  integer :: io
-  character(len=20) :: string
 
-  rewind(qmout_unit)
-  do
-    read(qmout_unit,'(a)',iostat=io) string     !marker,flag
-    if (io==-1) then
-      stat=-1
-      return
-    endif
-    if ( string(1:1)=='!' ) then
-      read(string(2:20),*,iostat=io) flag
-      if ( (io==0).and.(flag==flag1) ) then
-        stat=0
+  integer :: flag1, flag, stat, i, io
+  character(len=200) :: string
+
+  ! Loop through the data_buffer
+  do i = 1, n_lines
+    string = trim(data_buffer(i))
+
+    ! Check if the line starts with '!'
+    if (string(1:1) == '!') then
+      ! Try to read the flag number from the string
+      read(string(2:20), *, iostat=io) flag
+      if (io == 0 .and. flag == flag1) then
+        ! Flag found, set stat to 0 and return
+        stat = 0
         return
-      endif
-    endif
-  enddo
+      end if
+    end if
+  end do
 
-endsubroutine
+  ! Flag was not found, set stat to -1
+  stat = -1
+  return
+
+end subroutine
 
 ! =================================================================== !
 
@@ -215,14 +222,15 @@ subroutine get_hamiltonian(n, H_ss)
   implicit none
   integer,intent(in) :: n       ! size of the matrix
   complex*16,intent(out) :: H_ss(n,n)
-  integer :: icol,irow
+  integer :: icol,irow,line_index
   character(len=8000) title
 
   call check_qmout_unit('get_hamiltonian')
 
-  call goto_flag(1,'get_hamiltonian')
+  call goto_flag(1,'get_hamiltonian', line_index)
 
-  call matread(n, H_ss, qmout_unit, title)
+  ! call matread(n, H_ss, qmout_unit, title)
+  call pyzread(n, H_ss, line_index, title)
   read(title,*) irow,icol
   if ( (irow==n).and.(icol==n) ) then
     continue
@@ -250,15 +258,16 @@ subroutine get_dipoles(n, DM_ssd)
   implicit none
   integer,intent(in) :: n       ! size of the matrix
   complex*16,intent(out) :: DM_ssd(n,n,3)
-  integer :: icol,irow,idir
+  integer :: icol,irow,idir, line_index
   character(len=8000) title
 
   call check_qmout_unit('get_dipoles')
 
-  call goto_flag(2,'get_dipoles')
+  call goto_flag(2,'get_dipoles', line_index)
 
   do idir=1,3
-    call matread(n, DM_ssd(:,:,idir), qmout_unit, title)
+    ! call matread(n, DM_ssd(:,:,idir), qmout_unit, title)
+    call pyzread(n, DM_ssd(:,:,idir), line_index, title)
     read(title,*) irow,icol
     if ( (irow==n).and.(icol==n) ) then
       continue
@@ -278,15 +287,15 @@ subroutine get_gradients(nstates, natom, grad_sad)
   implicit none
   integer,intent(in) :: nstates,natom
   real*8,intent(out) :: grad_sad(nstates,natom,3)
-  integer :: istate,iatom,idir
+  integer :: istate,iatom,idir, line_index
   character(len=8000) title
 
   call check_qmout_unit('get_gradients')
 
-  call goto_flag(3,'get_gradients')
+  call goto_flag(3,'get_gradients', line_index)
 
   do istate=1,nstates
-    call vec3read(natom, grad_sad(istate,:,:), qmout_unit, title)
+    call pyd3vecread(natom, grad_sad(istate,:,:), line_index, title)
     read(title,*) iatom,idir
     if ( (iatom==natom).and.(idir==3) ) then
       continue
@@ -344,12 +353,12 @@ subroutine get_nonadiabatic_ddt(n, T_ss)
   implicit none
   integer,intent(in) :: n       ! size of the matrix
   complex*16,intent(out) :: T_ss(n,n)
-  integer :: icol,irow
+  integer :: icol,irow, line_index
   character(len=8000) title
 
   call check_qmout_unit('get_nonadiabatic_ddt')
 
-  call goto_flag(4,'get_nonadiabatic_ddt')
+  call goto_flag(4,'get_nonadiabatic_ddt', line_index)
 
   call matread(n, T_ss, qmout_unit, title)
   read(title,*) irow,icol
@@ -371,12 +380,12 @@ subroutine get_nonadiabatic_ddr(nstates, natom, T_ssad)
   implicit none
   integer,intent(in) :: nstates,natom
   real*8,intent(out) :: T_ssad(nstates,nstates,natom,3)
-  integer :: icol,irow,iatom,idir
+  integer :: icol,irow,iatom,idir, line_index
   character(len=8000) title
 
   call check_qmout_unit('get_nonadiabatic_ddr')
 
-  call goto_flag(5,'get_nonadiabatic_ddr')
+  call goto_flag(5,'get_nonadiabatic_ddr', line_index)
 
   do icol=1,nstates
     do irow=1,nstates
@@ -402,14 +411,15 @@ subroutine get_overlap(n, S_ss)
   implicit none
   integer,intent(in) :: n       ! size of the matrix
   complex*16,intent(out) :: S_ss(n,n)
-  integer :: icol,irow
+  integer :: icol,irow, line_index
   character(len=8000) title
 
   call check_qmout_unit('get_overlap')
 
-  call goto_flag(6,'get_overlap')
+  call goto_flag(6,'get_overlap', line_index)
 
-  call matread(n, S_ss, qmout_unit, title)
+  ! call matread(n, S_ss, qmout_unit, title)
+  call pyzread(n, S_ss, line_index, title)
   read(title,*) irow,icol
   if ( (irow==n).and.(icol==n) ) then
     continue
@@ -546,12 +556,12 @@ subroutine get_dipolegrad(nstates, natom, DMDR_ssdad)
   implicit none
   integer,intent(in) :: nstates,natom
   real*8,intent(out) :: DMDR_ssdad(nstates,nstates,3,natom,3)
-  integer :: icol,irow,iatom,idir,ipol
+  integer :: icol,irow,iatom,idir,ipol, line_index
   character(len=8000) title
 
   call check_qmout_unit('get_dipolegrad')
 
-  call goto_flag(12,'get_dipolegrad')
+  call goto_flag(12,'get_dipolegrad', line_index)
 
   do icol=1,nstates
     do irow=1,nstates
@@ -570,6 +580,72 @@ subroutine get_dipolegrad(nstates, natom, DMDR_ssdad)
 
 endsubroutine
 
-! =================================================================== !
+subroutine pyzread(n, A, line_index, title)
+  implicit none
+  integer, intent(in) :: n
+  integer, intent(inout) :: line_index
+  complex*16, intent(out) :: A(n, n)
+  character(len=8000), intent(out) :: title
+  integer :: i, j, io
+  real*8 :: line(2*n)
+  character(len=200) :: string
+
+  ! Read the title line from data_buffer
+  title = trim(data_buffer(line_index))
+  line_index = line_index + 1
+
+  ! Read the matrix data from data_buffer
+  do i = 1, n
+    string = trim(data_buffer(line_index))
+    line_index = line_index + 1
+    read(string, *, iostat=io) (line(j), j = 1, 2*n)
+    if (io /= 0) then
+      write(*,*) 'Could not read matrix'
+      write(*,*) 'routine=zread(), n=', n
+      write(*,*) 'title=', trim(title)
+      stop 1
+    end if
+    do j = 1, n
+      A(i, j) = dcmplx(line(2*j-1), line(2*j))
+    end do
+  end do
+
+end subroutine
+
+subroutine pyd3vecread(n, c, line_index, title)
+  implicit none
+  ! parameters
+  integer, intent(in) :: n
+  real*8, intent(out) :: c(n, 3)
+  integer, intent(inout) :: line_index  ! Current position in data_buffer
+  character(len=8000), intent(out) :: title
+  ! internal variables
+  integer :: i, j, io
+  character(len=200) :: string
+
+  ! Read the title line from data_buffer
+  title = trim(data_buffer(line_index))
+  line_index = line_index + 1
+
+  ! Read the 3-vectors from data_buffer
+  do i = 1, n
+    if (line_index > n_lines) then
+      write(*,*) 'Error: Reached end of data_buffer while reading 3-vectors'
+      stop 1
+    end if
+    string = trim(data_buffer(line_index))
+    line_index = line_index + 1
+
+    ! Read the 3-vector components from the line
+    read(string, *, iostat=io) (c(i, j), j = 1, 3)
+    if (io /= 0) then
+      write(*,*) 'Could not read 3-vector'
+      write(*,*) 'routine=d3vecread(), n=', n
+      write(*,*) 'title=', trim(title)
+      stop 1
+    end if
+  end do
+
+end subroutine
 
 endmodule

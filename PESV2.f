@@ -1,15 +1,18 @@
         SUBROUTINE Main(coeffs, Rs, N, O, Ar, massN, massO, massAr,
-     &    pot, dercart)
+     &    pot, dercart, terminate)
 
         implicit none
 
-        integer i
+        integer i, terminate
         Real*8 coeffs(0:10000, 0:8), Rs(0:10000), N(3), O(3), Ar(3)
         Real*8 massN, massO, massAr, pot, dercart(3, 3), costheta, RCM
         Real*8 pot_eval
  
 Cf2py   intent(in) :: coeffs, Rs, N, O, Ar, massN, massO, massAr
-Cf2py   intent(out) :: pot, dercart
+Cf2py   intent(out) :: pot, dercart, terminate
+
+c       terminate flag set to 0 for off
+        terminate = 0
 
 c       Convert distances (in Angstroms to Bohr)
         do i = 1, 3
@@ -22,9 +25,8 @@ c       Main section
         call coords(N, O, Ar, massN, massO, RCM, costheta)
         
 c       Stopping Mechanism
-        if (RCM .gt. 20.0d0) then      
-                open(1, file = 'STOP', status = 'new')  
-                close(1)    
+        if (RCM .gt. 20.0d0) then
+                terminate = 1 
         endif
         
         pot = pot_eval(coeffs, RCM, costheta, Rs)
