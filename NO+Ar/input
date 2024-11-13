@@ -1,0 +1,30 @@
+# file with molecule 0
+mol = 0 NO.txt 
+# file with molecule 1
+mol = 1 Ar.txt 
+# Temperature for sampling vibrational states (over-writes Tvib from molecule file, if present)
+Tvib = 0.00001
+# Temperature for sampling rotational states (over-writes Trot from molecule file, if present)
+Trot = 0.00001
+# Temperature for sampling velocity states (over-writes Tvel from molecule file, if present)
+Tvel = -848.3 0.0
+# Select a precice relative z-velocity (m/s):
+# Tvel = -500.0
+# Select a relative z-velocity gaussian centre and FWHM (m/s)
+# Tvel = -500.0 50.0
+# Z Distance between scattering molecules (Ang)
+Rz   = 8
+maxb  = 8
+# directory name in which to place outputs
+dirout = outputs
+# output filenames
+fileout = out
+# Number of MC samples generated
+Nsamp = 1000
+# set RNG seed
+seed = 400
+# write velocity/xyz/info data into files or memory only (True/False)
+write = False
+# if the molecules are polarized in some direction before scattering, then the chi (azimuthal angle) has to be sampled
+# this is the angle about the z coordinate determining the direction of the impact parameter vector (pi/2 i imagine)
+# chi = 1.570795

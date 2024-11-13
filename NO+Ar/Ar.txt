@@ -1,0 +1,2 @@
+#reference geometry of the molecule
+xyz  = Ar.xyz  

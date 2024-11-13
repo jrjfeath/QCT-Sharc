@@ -1,0 +1,161 @@
+Reading scattering input file : /mnt/scratch/users/jrjfeath/QCT_Sharc/Example/NO+Ar/input
+########################################################
+Reading molecular input : 0 NO.txt 
+Reading input file : NO.txt
+   Input Orientation (Ang): 
+   2
+    
+   N    1.150800000    0.000000000    0.000000000 
+   O    0.000000000    0.000000000    0.000000000 
+   No harmonic frequencies :
+   #### Standard Orientation: 
+   Asymmetry constant:   -1.000000000
+   Rotor type : linear
+   Standard Orientation :
+   2
+    
+   N    0.000000000    0.000000000    1.159561413 
+   O   -0.000000000    0.000000000   -1.015139871 
+########################################################
+Reading molecular input : 1 Ar.txt 
+Reading input file : Ar.txt
+   Input Orientation (Ang): 
+   1
+    
+   Ar    0.000000000    0.000000000    0.000000000 
+   No harmonic frequencies :
+   #### Standard Orientation: 
+   No standard orinetation: 
+   Standard Orientation :
+   1
+    
+   Ar    0.000000000    0.000000000    0.000000000 
+Temperature for Vibrational States: 0.00001 
+Temperature for Rotational States: 0.00001 
+Temperature for Intermolecular Velocity: -848.3 
+Full Width Half-Maximum (FWHM): 0.0
+Intermolecular Z-Distance: 8
+Maximum impact parameter: 8
+Directory Output Name: outputs
+Prefix output Prefix Name: out
+Number of generated samples: 1000
+Write data to files: False
+Reduced Mass           :  3.124e+04
+Overwriting molecular Trot to system Trot..1e-05
+Overwriting molecular Tvib to system Tvib..1e-05
+Overwriting molecular Trot to system Trot..1e-05
+Overwriting molecular Tvib to system Tvib..1e-05
+Generating 1000 Samples from distribuition 
+Generated 1000 Samples from distribuitions (molecule :NO.txt) 
+No vibrational state distroGenerated rotational state distro temperature 1e-05
+Maximum rigid rotor state 7
+ Rotational State Distribuition:
+      0      1      2      3      4      5      6
+    0.0    0.0    0.0    0.0    0.0    0.0    0.0
+Generated orientational distribuition type 0
+Generated 1000 Samples from distribuitions (molecule :Ar.txt) 
+No vibrational state distroNo rotational state distro No orientational distribution Generated impact parater with maximum b= 15.11784
+Generated intermolecular velocity 848.3
+Total Velocity Distribuitio (m/s):
+-983612.87 -764843.72 -546074.57 -327305.42 -108536.27 110232.87 329002.02 547771.17 766540.32 
+       0        0        0        0     1000        0        0        0        0        0 
+Generating Sample number 1
+Generating Sample number 1
+Generating Sample number 2
+Generating Sample number 3
+Generating Sample number 4
+Generating Sample number 5
+Generating Sample number 6
+Generating Sample number 7
+Generating Sample number 8
+Generating Sample number 9
+Generating Sample number 10
+Generating Sample number 11
+Generating Sample number 12
+Generating Sample number 13
+Generating Sample number 14
+Generating Sample number 15
+Generating Sample number 16
+Generating Sample number 17
+Generating Sample number 18
+Generating Sample number 19
+Generating Sample number 20
+Generating Sample number 21
+Generating Sample number 22
+Generating Sample number 23
+Generating Sample number 24
+Generating Sample number 25
+Generating Sample number 26
+Generating Sample number 27
+Generating Sample number 28
+Generating Sample number 29
+Generating Sample number 30
+Generating Sample number 31
+Generating Sample number 32
+Generating Sample number 33
+Generating Sample number 34
+Generating Sample number 35
+Generating Sample number 36
+Generating Sample number 37
+Generating Sample number 38
+Generating Sample number 39
+Generating Sample number 40
+Generating Sample number 41
+Generating Sample number 42
+Generating Sample number 43
+Generating Sample number 44
+Generating Sample number 45
+Generating Sample number 46
+Generating Sample number 47
+Generating Sample number 48
+Generating Sample number 49
+Generating Sample number 50
+Generating Sample number 51
+Generating Sample number 52
+Generating Sample number 53
+Generating Sample number 54
+Generating Sample number 55
+Generating Sample number 56
+Generating Sample number 57
+Generating Sample number 58
+Generating Sample number 59
+Generating Sample number 60
+Generating Sample number 61
+Generating Sample number 62
+Generating Sample number 63
+Generating Sample number 64
+Generating Sample number 65
+Generating Sample number 66
+Generating Sample number 67
+Generating Sample number 68
+Generating Sample number 69
+Generating Sample number 70
+Generating Sample number 71
+Generating Sample number 72
+Generating Sample number 73
+Generating Sample number 74
+Generating Sample number 75
+Generating Sample number 76
+Generating Sample number 77
+Generating Sample number 78
+Generating Sample number 79
+Generating Sample number 80
+Generating Sample number 81
+Generating Sample number 82
+Generating Sample number 83
+Generating Sample number 84
+Generating Sample number 85
+Generating Sample number 86
+Generating Sample number 87
+Generating Sample number 88
+Generating Sample number 89
+Generating Sample number 90
+Generating Sample number 91
+Generating Sample number 92
+Generating Sample number 93
+Generating Sample number 94
+Generating Sample number 95
+Generating Sample number 96
+Generating Sample number 97
+Generating Sample number 98
+Generating Sample number 99

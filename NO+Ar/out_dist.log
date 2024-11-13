@@ -1,0 +1,61 @@
+Reading scattering input file : input
+########################################################
+Reading molecular input : 0 NO.txt 
+Reading input file : NO.txt
+   Input Orientation (Ang): 
+   2
+    
+   N    0.000000000    0.000000000    0.000000000 
+   O    0.000000000    0.000000000    0.000000000 
+   No harmonic frequencies :
+   #### Standard Orientation: 
+   Asymmetry constant:            nan
+   Rotor type : linear
+   Standard Orientation :
+   2
+    
+   N    0.000000000    0.000000000    0.000000000 
+   O    0.000000000    0.000000000    0.000000000 
+########################################################
+Reading molecular input : 1 Ar.txt 
+Reading input file : Ar.txt
+   Input Orientation (Ang): 
+   1
+    
+   Ar    0.000000000    0.000000000    0.000000000 
+   No harmonic frequencies :
+   #### Standard Orientation: 
+   No standard orinetation: 
+   Standard Orientation :
+   1
+    
+   Ar    0.000000000    0.000000000    0.000000000 
+Temperature for Vibrational States: 0.00001 
+Temperature for Rotational States: 0.00001 
+Temperature for Intermolecular Velocity: -848.3 
+Full Width Half-Maximum (FWHM): 0.0
+Intermolecular Z-Distance: 8
+Maximum impact parameter: 8
+Directory Output Name: outputs
+Prefix output Prefix Name: out
+Number of generated samples: 1000
+Write data to files: False
+Reduced Mass           :  3.124e+04
+Overwriting molecular Trot to system Trot..1e-05
+Overwriting molecular Tvib to system Tvib..1e-05
+Overwriting molecular Trot to system Trot..1e-05
+Overwriting molecular Tvib to system Tvib..1e-05
+Generating 10000 Samples from distribuition 
+Generated 10000 Samples from distribuitions (molecule :NO.txt) 
+No vibrational state distroGenerated rotational state distro temperature 1e-05
+Maximum rigid rotor state 7
+ Rotational State Distribuition:
+      0      1      2      3      4      5      6
+    0.0    0.0    0.0    0.0    0.0    0.0    0.0
+Generated orientational distribuition type 0
+Generated 10000 Samples from distribuitions (molecule :Ar.txt) 
+No vibrational state distroNo rotational state distro No orientational distribution Generated impact parater with maximum b= 15.11784
+Generated intermolecular velocity 848.3
+Total Velocity Distribuitio (m/s):
+-983612.87 -764843.72 -546074.57 -327305.42 -108536.27 110232.87 329002.02 547771.17 766540.32 
+       0        0        0        0    10000        0        0        0        0        0 
